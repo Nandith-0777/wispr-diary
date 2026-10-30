@@ -1,0 +1,12 @@
+{
+  "name": "wispr-diary",
+  "version": "1.0.0",
+  "private": true,
+  "description": "A voice-first diary that feels like opening a real book.",
+  "scripts": {
+    "build": "node scripts/build-static.cjs",
+    "test": "node tests/run.cjs"
+  },
+  "engines": { "node": ">=20" },
+  "devDependencies": { "linkedom": "0.18.14" }
+}
