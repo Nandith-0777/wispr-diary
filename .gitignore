@@ -1,0 +1,11 @@
+node_modules/
+public/
+.vercel/
+.qa/
+.env
+.env.*
+!.env.example
+__pycache__/
+*.pyc
+*.log
+artifacts/

@@ -1,0 +1,13 @@
+// Paper belongs to a book, so every spread and newly added page shares it.
+(()=>{
+ const colors={white:'#ffffff',cream:'#fff8e9',pink:'#fce8ef',purple:'#eee7fa',lavender:'#eee7fa',green:'#e9f2e4',blue:'#e8f1fa',yellow:'#fff5ce'};
+ const panel=document.createElement('dialog');panel.id='paper-settings';
+ panel.innerHTML='<button class="dialog-close" aria-label="Close paper settings">×</button><div class="eyebrow">YOUR BOOK, YOUR PAPER</div><h2>Make room for your words.</h2><p>These settings apply to every page in this book.</p><label for="paper-pattern">Paper style</label><select id="paper-pattern"><option value="blank">Blank</option><option value="lined">Lined</option></select><label for="paper-color">Page color</label><input id="paper-color" type="color" value="#ffffff"><div class="paper-swatches"></div><p class="paper-command">Try “Diary, make the pages lined” or “Diary, change page color to pink”.</p>';
+ document.body.append(panel);panel.querySelector('.dialog-close').onclick=()=>panel.close();
+ const button=document.createElement('button');button.id='open-paper-settings';button.textContent='Paper';button.onclick=()=>{sync();panel.showModal()};document.querySelector('.desk-top-actions').prepend(button);
+ function sync(){const book=activeBook(),style=book.paperStyle==='lined'?'lined':'blank',color=/^#[\da-f]{6}$/i.test(book.paperColor||'')?book.paperColor:'#ffffff';document.querySelector('#book').dataset.paper=style;document.querySelector('#book').style.setProperty('--paper-color',color);if(book.textSize)document.querySelector('#book').style.setProperty('--page-text-size',book.textSize+'px');else document.querySelector('#book').style.removeProperty('--page-text-size');document.querySelector('#paper-pattern').value=style;document.querySelector('#paper-color').value=color;}
+ function set({style,color}={}){if(!requireBookEdit())return false;const book=activeBook();if(style)book.paperStyle=style==='lined'?'lined':'blank';if(color){const value=colors[color]||color;if(!/^#[\da-f]{6}$/i.test(value))return false;book.paperColor=value}sync();return persistLibrary()}
+ document.querySelector('#paper-pattern').onchange=e=>set({style:e.target.value});document.querySelector('#paper-color').oninput=e=>set({color:e.target.value});
+ for(const [name,color] of Object.entries(colors)){if(name==='lavender')continue;const swatch=document.createElement('button');swatch.style.background=color;swatch.title=name;swatch.setAttribute('aria-label',name+' pages');swatch.onclick=()=>set({color});panel.querySelector('.paper-swatches').append(swatch)}
+ window.diaryPaper={sync,set,colors,show(){sync();panel.showModal()}};sync();
+})();

@@ -1,0 +1,55 @@
+// Website microphone -> our server -> official Wispr API -> diary intent router.
+// The private Wispr key never reaches this file, browser storage or a URL.
+(()=>{
+ const $=s=>document.querySelector(s),mic=$('#start-voice');let version=0,current=null,recovery=null;
+ const state=(title,text)=>{$('#session-state').textContent=title;$('#session-feedback').textContent=text;$('#voice-status').hidden=false;$('#voice-status').textContent=text};
+ const owner=()=>window.diaryAuth?.user?.id||'guest';
+ const context=()=>({book:activeBookId,owner:owner()});
+ const matches=token=>token.book===activeBookId&&token.owner===owner();
+ const recoveryPanel=document.createElement('div');recoveryPanel.id='voice-recording-recovery';recoveryPanel.hidden=true;recoveryPanel.setAttribute('role','status');recoveryPanel.innerHTML='<span id="voice-recovery-message"></span><button id="retry-voice-recording">Retry</button><button id="download-voice-recording">Save recording</button><button id="discard-voice-recording">Discard</button>';
+ $('.voice-command-dock').append(recoveryPanel);
+ function showRecovery(clips,message){recovery=clips;recoveryPanel.hidden=false;$('#voice-recovery-message').textContent=message;$('#retry-voice-recording').disabled=clips.some(c=>!matches(c.target))}
+ function release(recording){if(!recording)return;clearTimeout(recording.flushTimer);recording.stream?.getTracks().forEach(track=>{track.onended=null;track.stop()});recording.source?.disconnect();recording.node?.disconnect();recording.gain?.disconnect();recording.audio?.close().catch(()=>{});recording.stream=null;recording.node=null;mic.classList.remove('listening')}
+ function cancel(){version++;const recording=current;if(!recording)return;recording.flushing=true;recording.segmenter?.flush();const clips=[...recording.pending];current=null;recording.closed=true;recording.request?.abort();release(recording);recording.pending=[];recording.segmenter?.reset();if(clips.length)showRecovery(clips,'Unfinished recording kept here. Retry it in the same book, or save the audio before leaving.')}
+ function stopped(message){window.voiceSession?.stop(message);state('Microphone paused',message)}
+ function fail(recording,message){if(current!==recording)return;const clips=[...recording.pending];recording.flushing=true;if(recording.segmenter)recording.segmenter.flush();for(const clip of recording.pending)if(!clips.includes(clip))clips.push(clip);recording.pending=[];cancel();if(clips.length)showRecovery(clips,message);stopped(message)}
+ async function send(recording){if(recording.busy||current!==recording)return;recording.busy=true;
+  try{while(recording.pending.length&&current===recording){const clip=recording.pending[0];if(!matches(clip.target)){fail(recording,'The book or account changed. Save the recording, then speak again in the intended book.');return}
+    state('Writing with Wispr…','Keep talking. Your words are being added in order.');const controller=new AbortController();recording.request=controller;const timer=setTimeout(()=>controller.abort(),40000);let response,result;
+    try{response=await fetch('/api/voice/transcribe',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({audio:window.WisprAudio.base64(window.WisprAudio.wav(clip.samples)),language:clip.language}),signal:controller.signal});result=await response.json()}finally{clearTimeout(timer);recording.request=null}
+    if(current!==recording)return;if(!response.ok)throw new Error(result.error||'Wispr could not transcribe the recording. Retry or save it.');if(typeof result.text!=='string')throw new Error('Wispr returned an invalid transcript. Retry or save the recording.');
+    if(!matches(clip.target)){fail(recording,'Your book changed before transcription finished. Save the recording for the intended book.');return}
+    recording.pending.shift();if(result.text.trim()){window.voiceSession.accept(result.text);await window.diaryConversation.settled()}
+    if(current!==recording)return;
+   }
+   if(recording.finishing&&!recording.flushingCapture&&current===recording){cancel();stopped('Your completed words are saved. The microphone is off.')}else if(current===recording&&!recording.finishing)state('Listening with Wispr','Tell your story or ask for a change. Pause briefly to add your words.');
+  }catch(error){if(current===recording)fail(recording,error.name==='AbortError'?'Wispr took too long to respond. Retry or save your recording.':error.message||'Voice connection failed. Retry or save the recording.')}
+  finally{recording.busy=false}
+ }
+ function enqueue(recording,samples){recording.pending.push({samples,target:recording.target,language:$('#voice-language').value.split('-')[0]||'en'});if(recording.pending.length>6){recording.finishing=true;release(recording);state('Finishing your recording…','The connection is catching up. Please wait before starting again.')}if(!recording.flushing)send(recording)}
+ async function start(){
+  if(current||recovery){if(recovery){recoveryPanel.hidden=false;state('Recording waiting','Retry, save, or discard your previous recording before starting another.');window.voiceSession.stop('A previous recording needs your attention.')}return}
+  const id=++version,recording={id,target:context(),pending:[],busy:false,finishing:false,closed:false};current=recording;
+  try{
+   state('Connecting to Wispr…','Checking the website microphone connection.');const response=await fetch('/api/voice/status',{cache:'no-store'}),status=await response.json();if(current!==recording)return;
+   if(!response.ok||!status.configured){cancel();stopped('Wispr voice is awaiting API access. No installation is needed. You can type, or choose browser dictation in Voice options for now.');$('#embedded-voice-status').textContent='Wispr API access is not connected yet. The site owner needs an approved key.';$('#voice-options').showModal();return}
+   if(!navigator.mediaDevices?.getUserMedia||!window.AudioContext||!window.AudioWorkletNode)throw new Error('This browser cannot record here. Use a current Chrome, Edge, or Safari browser over HTTPS or localhost.');
+   state('Allow your microphone','Your microphone audio will be sent to Wispr Flow to turn it into text.');const stream=await navigator.mediaDevices.getUserMedia({audio:{channelCount:1,echoCancellation:true,noiseSuppression:true,autoGainControl:true}});
+   if(current!==recording){stream.getTracks().forEach(track=>track.stop());return}recording.stream=stream;const audio=new window.AudioContext();recording.audio=audio;await audio.audioWorklet.addModule('wispr-capture.worklet.js?v=20261030');if(current!==recording)return;await audio.resume();if(current!==recording)return;
+   recording.segmenter=new window.WisprAudio.Segmenter(samples=>enqueue(recording,samples));recording.source=audio.createMediaStreamSource(stream);recording.node=new window.AudioWorkletNode(audio,'wispr-capture');recording.gain=audio.createGain();recording.gain.gain.value=0;recording.source.connect(recording.node);recording.node.connect(recording.gain);recording.gain.connect(audio.destination);
+   let lastSound=Date.now();recording.node.port.onmessage=event=>{if(current!==recording)return;if(event.data?.type==='flushed'){recording.finishCapture?.();return}if(recording.finishing&&!recording.flushingCapture)return;const samples=new Float32Array(event.data);if(samples.some(value=>Math.abs(value)>.025))lastSound=Date.now();if(!matches(recording.target)&&recording.segmenter.parts.length){fail(recording,'The book or account changed while recording. Save this recording before continuing.');return}if(!recording.segmenter.parts.length)recording.target=context();recording.segmenter.push(samples);if(Date.now()-lastSound>120000)finish()};
+   for(const track of stream.getTracks())track.onended=()=>{if(current===recording&&!recording.finishing)fail(recording,'The microphone disconnected. Retry or save the recording.')};mic.classList.add('listening');state('Listening with Wispr','Tell your story or ask for a change. Pause briefly to add your words.');
+  }catch(error){if(current!==recording)return;cancel();stopped(error.name==='NotAllowedError'?'Microphone permission was denied. Allow microphone access in your browser, then try again.':error.message||'Could not start the microphone. Please try again.')}
+ }
+ function finish(){const recording=current;if(!recording||recording.finishing)return;recording.finishing=true;recording.flushingCapture=true;state('Finishing your words…','Please wait while your last words are added.');let finished=false;recording.finishCapture=()=>{if(finished||current!==recording)return;finished=true;recording.flushingCapture=false;recording.flushing=true;recording.segmenter?.flush();recording.flushing=false;release(recording);send(recording)};if(recording.node){recording.node.port.postMessage({type:'flush'});recording.flushTimer=setTimeout(recording.finishCapture,200)}else recording.finishCapture()}
+ $('#retry-voice-recording').onclick=()=>{if(!recovery||recovery.some(c=>!matches(c.target)))return;const clips=recovery;recovery=null;recoveryPanel.hidden=true;window.voiceSession.stop();window.voiceSession.ensureMode('wispr-api');const recording={id:++version,target:context(),pending:clips,busy:false,finishing:true,closed:false};current=recording;send(recording)};
+ $('#download-voice-recording').onclick=()=>{if(!recovery)return;const blob=new Blob([window.WisprAudio.wav(window.WisprAudio.join(recovery.map(c=>c.samples)))],{type:'audio/wav'}),url=URL.createObjectURL(blob),link=document.createElement('a');link.href=url;link.download='wispr-diary-recording.wav';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000)};
+ $('#discard-voice-recording').onclick=()=>{recovery=null;recoveryPanel.hidden=true};
+ $('#use-wispr-api').onclick=()=>{store('wd-website-voice-mode','wispr-api');$('#voice-options').close();if(window.voiceSession.active)window.voiceSession.stop();window.startDiarySession()};
+ const previousOptions=$('#voice-settings').onclick;$('#voice-settings').onclick=()=>{if(current)fail(current,'Voice mode changed. Retry or save the unfinished recording.');previousOptions()};
+ document.addEventListener('diary-auth-change',()=>{if(current)fail(current,'Your account changed. Save any unfinished recording before continuing.');if(recovery)$('#retry-voice-recording').disabled=recovery.some(c=>!matches(c.target))});
+ document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'&&current)finish()});window.addEventListener('pagehide',cancel);
+ window.addEventListener('beforeunload',event=>{if(recovery||current?.pending.length||current?.segmenter?.parts.length){event.preventDefault();event.returnValue=''}});
+ new MutationObserver(()=>{if(recovery)$('#retry-voice-recording').disabled=recovery.some(c=>!matches(c.target))}).observe($('#current-book-name'),{childList:true,subtree:true,characterData:true});
+ window.embeddedWispr={start,finish,cancel,get recording(){return !!current},get finishing(){return !!current?.finishing}};
+})();

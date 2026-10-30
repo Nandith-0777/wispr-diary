@@ -6,7 +6,7 @@ A diary should feel like a place to return to, not another document to finish. W
 
 Built for the Wispr Flow no-hands challenge, with voice at the center and typing always available.
 
-[Explore the website](https://wispr-diary-memories.nandithn01.chatgpt.site/) · [Watch the narrated demo](https://wispr-diary-memories.nandithn01.chatgpt.site/demo.html) · [Set up authentication](AUTH-SETUP.md)
+[Explore the website](https://wispr-diary.vercel.app/) · [Watch the narrated demo](https://wispr-diary.vercel.app/demo.html) · [Set up authentication](AUTH-SETUP.md)
 
 ## A minute inside the book
 

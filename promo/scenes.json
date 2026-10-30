@@ -1,0 +1,11 @@
+[
+  {"id":"home","title":"Your day.\nYour way.","subtitle":"A little place for your life.","voice":"Your day deserves more than a forgotten note. Meet Wispr Diary."},
+  {"id":"create","title":"A book\nof your\nown.","subtitle":"Choose the title. Make the cover yours.","voice":"Make a book of your own. Give it a title, choose a cover, and make a little space for your day."},
+  {"id":"tour","title":"A little\nhello.","subtitle":"A quick tour. Then it is all yours.","voice":"A short welcome shows you where everything lives. Skip it anytime, or come back to the tour from the Book menu."},
+  {"id":"journal","title":"Say it.\nKeep it.","subtitle":"Speak or type. Let the story grow.","voice":"Tell the story of your day, or type it. Your words belong on the page, with more room whenever you need it."},
+  {"id":"note","title":"Keep the\nlittle\nthings.","subtitle":"Sticky notes, made for passing thoughts.","voice":"Diary, add note: remember the little things. Keep a thought on a sticky note, and move it around by its grip."},
+  {"id":"media","title":"More than\nwords.","subtitle":"Photos. Video. The sound of a memory.","voice":"Bring the day back with a photograph, a video, or a voice recording. Keep each memory right beside your words."},
+  {"id":"contents","title":"Find your\nway back.","subtitle":"Your pages, with a place for every chapter.","voice":"Choose lined or blank paper, and a page color you love. Contents brings you back to any part of your story."},
+  {"id":"library","title":"A shelf\nfull of\nyou.","subtitle":"Your account. Your books. Your stories.","voice":"Your books stay in your account. Save unfinished thoughts in Ideas for Later, until they find their page."},
+  {"id":"outro","title":"Less typing.\nMore living.","subtitle":"WISPR DIARY","voice":"Wispr Diary. Less typing. More living."}
+]

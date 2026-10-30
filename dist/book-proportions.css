@@ -1,0 +1,19 @@
+/* An open spread keeps two matching portrait pages instead of stretching. */
+.inside-book .book.scrapbook.book-open{flex:none;max-width:none;max-height:none;aspect-ratio:3/2}
+.inside-book .book-area{padding-inline:4px;overflow:visible}
+.inside-book .sample-reading .diary-writing section:last-child textarea{flex:0 0 29%;height:29%;max-height:none}
+.inside-book .sample-reading:not(.has-pieces) .diary-writing section:last-child textarea{flex:1;height:100%;max-height:none}
+.inside-book .sample-reading .diary-writing textarea{font-size:clamp(12px,1.1vw,16px);line-height:1.75}
+.inside-book .sample-reading .scrap-piece.audio{min-width:125px;padding:10px}
+.inside-book .sample-reading .scrap-piece.video .piece-text{font-size:11px!important;line-height:1.5;margin-top:8px;min-height:0}
+.inside-book .sample-reading .scrap-piece.video video{max-height:210px}
+.inside-book .sample-reading .scrap-piece.audio .piece-text{font-size:11px!important;min-height:0}
+.inside-book .sample-reading .scrap-piece.audio audio{margin:5px 0 10px}
+.page-turn-layer{display:block!important;perspective:2400px}
+.turn-leaf{z-index:2}
+.turn-face{border-radius:1px 4px 4px 1px;border:1px solid #d8cdb644}
+.turn-face:after{background:linear-gradient(90deg,#36213e30,transparent 24%,#fff5 60%,#36213e15)}
+.gentle-turn .turn-under{display:none}
+@media(max-width:1100px){.inside-book #diary-view{grid-template-columns:9px minmax(0,1fr) 9px;grid-template-rows:52px 58px 30px minmax(0,1fr) auto 50px auto}.inside-book .desk-rail{gap:17px}.inside-book .scrap-actions button{min-height:48px;padding:5px}.inside-book .spread-heading{padding:0 12px}.inside-book .book-area{padding:3px 3px 16px}.inside-book .diary-writing section{padding:20px 22px 14px}.inside-book .diary-page-date{margin-bottom:16px}.inside-book .sample-reading .diary-writing textarea{font-size:14px;line-height:1.75}}
+@media(max-width:650px){.inside-book #diary-view{grid-template-columns:5px minmax(0,1fr) 5px;grid-template-rows:52px 58px 30px minmax(0,1fr) auto 50px auto}.inside-book .diary-writing section{padding:12px 11px 10px}.inside-book .sample-reading .diary-writing textarea{font-size:12px;line-height:1.6}.inside-book .diary-page-date{margin-bottom:10px;font-size:6px}.inside-book .sample-reading .scrap-piece.video .piece-text,.inside-book .sample-reading .scrap-piece.audio .piece-text{font-size:8px!important}.inside-book .sample-reading .scrap-piece.audio{min-width:120px;padding:7px}.inside-book .scrap-piece .piece-handle{height:19px;min-height:19px}.inside-book .sample-reading .scrap-piece.video{padding:6px}.inside-book .sample-reading .scrap-piece.audio audio{height:28px}}
+@media(max-height:520px){.inside-book #diary-view{overflow-y:auto;grid-template-rows:52px 58px 30px minmax(240px,1fr) auto 50px auto}}

@@ -1,0 +1,22 @@
+const fs=require('node:fs'),path=require('node:path'),Module=require('node:module');const filename=path.join(__dirname,'book-control-probes.cjs');const fixture=fs.readFileSync(path.join(__dirname,'workspace.cjs'),'utf8').split('(async()=>{')[0];
+const probes=String.raw`
+(async()=>{
+ await send('Diary, create a book called Control checks.');await send('Left page writing.');await send('Diary, right page. Right page writing.');await send('Diary, save.');
+ await send('Open a brown sticky note saying Good morning');await send('Delete the sticky note');assert.equal($('.scrap-piece.note'),null,'Natural deletion removes the selected note');await send('Undo');assert.equal($('.scrap-piece.note .piece-text').textContent,'Good morning','Voice undo restores a deleted note');
+ await send('Duplicate the brown sticky note');assert.equal(run('pieces.length'),2);await send('Delete the brown sticky note');assert.equal(run('pieces.length'),2,'Ambiguous deletion does not guess');assert($('#session-feedback').textContent.includes('more than one'));
+ await send('Select sticky note 2');await send('Delete the sticky note');assert.equal(run('pieces.length'),1);await send('Undo');assert.equal(run('pieces.length'),2);
+ await send('Diary, add pages.');await send('Third page writing.');await send('Diary, right page. Fourth page writing.');await send('Diary, go to page 1.');
+ await send('Move sticky note 1 to page 4');assert.equal(run('activeBook().spreads[0].pieces.length'),1);assert.equal(run('activeBook().spreads[1].pieces.length'),1);await send('Undo');assert.equal(run('activeBook().spreads[0].pieces.length'),2);assert.equal(run('activeBook().spreads[1].pieces.length'),0);
+ await send('Delete the current text from this particular page number 3');assert.equal(run('activeBook().spreads[1].diary.left'),'');assert.equal(run('activeBook().spreads[1].diary.right'),'Fourth page writing.');assert.equal(run('activeBook().spreads[0].diary.left'),'Left page writing.');await send('Undo');assert.equal(run('activeBook().spreads[1].diary.left'),'Third page writing.');
+ await send('Diary, right page.');await send('Clear text from this page');assert.equal($('#diary-right').value,'');assert.equal($('#diary-left').value,'Left page writing.');assert(run('pieces.every(p=>!p.text)'),'Clearing one page clears its note text');await send('Undo');assert.equal($('#diary-right').value,'Right page writing.');
+ run("newPiece('photo','Photo caption','assets/desk.jpg')");
+ const original=run('JSON.stringify(activeBook().spreads)');await send('Delete all the text from this whole book');assert(run('activeBook().spreads.every(s=>!s.diary.left&&!s.diary.right&&s.pieces.every(p=>!p.text))'));assert(run('pieces.some(p=>p.url==="assets/desk.jpg")'),'Clear writing keeps media');assert.equal(run('activeBook().spreads.length'),2,'Clearing does not remove pages');assert(run('entries.every(e=>!e.text&&!e.diary.left&&!e.diary.right)'),'Saved-entry snapshots are cleared too');
+ await send('Undo');assert.equal(run('JSON.stringify(activeBook().spreads)'),original,'Undo restores every cleared page and note caption');
+ await send('Delete all text from page 99');assert($('#session-feedback').textContent.includes('does not exist'));assert.equal(run('JSON.stringify(activeBook().spreads)'),original);
+ await send('Delete all text');assert($('#session-feedback').textContent.includes('Which writing'));assert.equal(run('JSON.stringify(activeBook().spreads)'),original);
+ await send('Delete all sticky notes from this book');assert(run('activeBook().spreads.every(s=>s.pieces.every(p=>p.type!=="note"))'));await send('Undo');assert.equal(run('pieces.filter(p=>p.type==="note").length'),2);
+ await send('Diary, clear text from page 3. Diary, clear text from page 4.');assert(run('!activeBook().spreads[1].diary.left&&!activeBook().spreads[1].diary.right'),'Scoped command batches execute in order');
+ await send('Diary, book controls');assert($('#book-options').open);await send('Diary, close help.');assert(!$('#book-options').open);
+ assert.equal(errors.length,0,JSON.stringify(errors));console.log('Book-control checks passed: note deletion/restoration, ambiguity, targeting by number/color, duplication, movement, page clearing, whole-book clearing, media retention, saved-entry consistency, sequential commands, invalid targets, and command guide.');
+})().catch(e=>{console.error(e);process.exitCode=1});
+`;const testModule=new Module(filename,module);testModule.filename=filename;testModule.paths=Module._nodeModulePaths(__dirname);testModule._compile(fixture+probes,filename);

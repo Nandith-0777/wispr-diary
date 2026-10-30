@@ -1,0 +1,30 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><title>Diary dictation target checks</title><h1>Dictation target checks</h1><p>Uses a fake speech recognizer. No microphone access.</p><button id="run-checks">Run checks</button><pre id="results">Not run</pre>
+<div><button id="start-voice">Mic</button><button id="voice-settings">Voice options</button></div><div id="voice-status" hidden></div><div id="piece-tools"></div>
+<div id="scrap-surface"><div class="diary-writing"><textarea id="diary-left">Left page untouched.</textarea><textarea id="diary-right">Right page.</textarea></div><article class="scrap-piece note" data-id="test-note"><div id="test-note" class="piece-text" contenteditable="false">before draft after</div></article><article class="scrap-piece photo" data-id="test-photo"><div id="test-caption" class="piece-text" contenteditable="false"></div></article></div>
+<button id="close-book">Close</button><button id="previous-spread">Previous</button><button id="next-spread">Next</button><button id="add-spread">Add</button><button id="back-books">Books</button><select id="spread-select"><option>Pages</option></select>
+<dialog id="voice-options"><button class="dialog-close">Close options</button><p id="flow-shortcuts"></p><button id="use-flow">Use Flow</button><button id="use-browser">Use browser</button><p id="browser-voice-support"></p><select id="voice-language"><option value="en-IN">English</option></select></dialog>
+<script>
+const saved=new Map();window.read=(key,fallback)=>saved.get(key)??(key==='wd-website-voice-mode'?'browser':fallback);window.store=(key,value)=>saved.set(key,value);window.openBook=()=>{};
+class FakeSpeech{constructor(){FakeSpeech.latest=this}start(){this.onstart?.()}stop(){this.onend?.()}abort(){this.aborted=true}}
+window.SpeechRecognition=FakeSpeech;
+</script><script src="../dist/voice-targets.js"></script><script src="../dist/voice.js"></script>
+<script>
+document.querySelector('#run-checks').onclick=()=>{
+ const lines=[],assert=(value,label)=>{if(!value)throw Error(label);lines.push('PASS: '+label)};
+ const note=document.querySelector('#test-note'),caption=document.querySelector('#test-caption'),left=document.querySelector('#diary-left'),right=document.querySelector('#diary-right');let savedNote='',savedCaption='',noteEvents=0;
+ note.addEventListener('input',()=>{savedNote=note.textContent;noteEvents++});caption.addEventListener('input',()=>savedCaption=caption.textContent);
+ const result=text=>Object.assign([{transcript:text}],{isFinal:true});
+ try{
+  window.selectDiaryVoicePiece('test-note');const range=document.createRange();range.setStart(note.firstChild,7);range.setEnd(note.firstChild,12);const sel=window.getSelection();sel.removeAllRanges();sel.addRange(range);
+  document.querySelector('#start-voice').click();const speech=FakeSpeech.latest;speech.onresult({resultIndex:0,results:[result('spoken words')]});
+  assert(note.textContent==='before spoken words after','Speech replaces the selected text inside a sticky note');assert(savedNote===note.textContent&&noteEvents===1,'Sticky-note dictation triggers autosave input');
+  speech.onresult({resultIndex:0,results:[result('spoken words')]});assert(noteEvents===1,'Repeated final speech results do not duplicate text');
+  speech.onresult({resultIndex:1,results:[result('spoken words'),result('<b>literal words</b>')]});assert(!note.querySelector('b')&&note.textContent.includes('<b>literal words</b>'),'Transcript markup is inserted as safe plain text');
+  window.selectDiaryVoicePiece('test-photo');assert(speech.aborted,'Selecting another piece cancels the previous recognition session');const before=note.textContent;speech.onresult({resultIndex:2,results:[result('spoken words'),result('ignored'),result('late text')]});assert(note.textContent===before,'Late speech cannot change an old destination');
+  document.querySelector('#use-flow').click();assert(document.activeElement===caption&&caption.isContentEditable,'Flow focuses an editable photo caption without a double-click');
+  document.querySelector('#use-browser').click();FakeSpeech.latest.onresult({resultIndex:0,results:[result('A dictated photo caption.')]});assert(savedCaption==='A dictated photo caption.','Browser speech writes and saves a selected photo caption');assert(left.value==='Left page untouched.','Piece dictation does not leak into the diary page');
+  const old=FakeSpeech.latest;right.focus();assert(old.aborted,'Focusing a diary page cancels piece dictation');right.setSelectionRange(right.value.length,right.value.length);document.querySelector('#use-browser').click();FakeSpeech.latest.onresult({resultIndex:0,results:[result('New diary words.')]});assert(right.value==='Right page. New diary words.','Voice returns to the selected diary page');FakeSpeech.latest.stop();
+  document.querySelector('#results').textContent=lines.join('\n')+'\nALL CHECKS PASSED';
+ }catch(error){document.querySelector('#results').textContent=lines.join('\n')+'\nFAIL: '+error.message;throw error}
+};
+</script></html>
