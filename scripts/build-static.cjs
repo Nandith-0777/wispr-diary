@@ -5,7 +5,7 @@ const root = path.resolve(__dirname, '..');
 const out = path.join(root, 'public');
 fs.mkdirSync(out, { recursive: true });
 fs.cpSync(path.join(root, 'dist'), out, { recursive: true });
-fs.writeFileSync(path.join(out, 'hosting-config.js'), 'window.diaryDeployment={staticHosting:true,googleTesting:true};\n');
+fs.writeFileSync(path.join(out, 'hosting-config.js'), 'window.diaryDeployment={staticHosting:true,googleTesting:false};\n');
 let html = fs.readFileSync(path.join(out, 'index.html'), 'utf8');
 html = html.replace('<head>', '<head><script src="hosting-config.js?v=1"></script>');
 html = html.replace('</body>', '<script src="hosting-ui.js?v=1"></script></body>');
