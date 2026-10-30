@@ -10,7 +10,7 @@ Built for the Wispr Flow no-hands challenge, with voice at the center and typing
 
 ## A minute inside the book
 
-[![Watch the Wispr Diary demo: a voice-first diary with photos, sticky notes, and audio memories](docs/media/poster.jpg)](docs/media/wispr-diary-promo.mp4)
+https://github.com/user-attachments/assets/39a52aa9-3992-4865-9814-bd531fdecd59
 
 **[▶ Watch the 63-second promo](docs/media/wispr-diary-promo.mp4)** · [Transcript](docs/media/transcript.md) · [Captions](docs/media/captions.vtt)
 
