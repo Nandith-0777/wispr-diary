@@ -7,6 +7,13 @@
     "build": "node scripts/build-static.cjs",
     "test": "node tests/run.cjs"
   },
-  "engines": { "node": ">=20" },
-  "devDependencies": { "linkedom": "0.18.14" }
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "linkedom": "0.18.14"
+  },
+  "dependencies": {
+    "@vercel/analytics": "^2.0.1"
+  }
 }
